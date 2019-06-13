@@ -7,6 +7,7 @@
 #include "box.h"
 #include "demo.h"
 #include "option_list.h"
+#include <string.h>
 
 #ifndef __COMPAR_FN_T
 #define __COMPAR_FN_T
@@ -15,6 +16,8 @@ typedef int (*__compar_fn_t)(const void*, const void*);
 typedef __compar_fn_t comparison_fn_t;
 #endif
 #endif
+
+#define ENABLE_LOG
 
 #include "http_stream.h"
 
@@ -56,7 +59,15 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             if (net_classes > names_size) getchar();
         }
     }
-
+    
+#ifdef ENABLE_LOG
+    FILE * pFileLog;
+    const char* log_file_name = "log.csv";
+    pFileLog = fopen (log_file_name,"a");
+    fprintf(pFileLog,"iteration;avg-loss;mAP.5\n");
+    fclose (pFileLog); // must close after opening
+#endif
+     
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
@@ -140,7 +151,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.threads = 3 * ngpus;   // Amazon EC2 Tesla V100: p3.2xlarge (8 logical cores) - p3.16xlarge
     //args.threads = 12 * ngpus;    // Ryzen 7 2700X (16 logical cores)
     mat_cv* img = NULL;
-    float max_img_loss = 5;
+    float max_img_loss = 15;
     int number_of_lines = 100;
     int img_size = 1000;
     img = draw_train_chart(max_img_loss, net.max_batches, number_of_lines, img_size, dont_show);
@@ -287,6 +298,15 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
             draw_precision = 1;
         }
+        
+#ifdef ENABLE_LOG
+        if( i%10 == 0) {
+            pFileLog = fopen (log_file_name,"a");
+            //"iteration;avg_loss;validation_mAP
+            fprintf(pFileLog,"%d;%f;%f\n", i, avg_loss, mean_average_precision);
+            fclose (pFileLog); // must close after opening
+        }
+#endif  
 #ifdef OPENCV
         draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port);
 #endif    // OPENCV

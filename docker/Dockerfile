@@ -13,7 +13,8 @@ RUN git clone https://github.com/AlexeyAB/darknet.git ; \
 FROM nvidia/cuda:10.0-cudnn7-runtime-ubuntu18.04 AS runtime
 
 RUN apt-get update -y && apt-get autoremove -y && \
-    apt-get install --no-install-recommends wget libopencv-core3.2 libopencv-imgcodecs3.2 libopencv-videoio3.2 libopencv-imgproc3.2 libopencv-highgui3.2 -y && \
+    apt-get install --no-install-recommends wget libopencv-core3.2 libopencv-imgcodecs3.2 libopencv-videoio3.2 libopencv-imgproc3.2 libopencv-highgui3.2 python3-pip libsm6 libxext6 libxrender-dev -y && \
+    pip3 install opencv-python pillow && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /darknet/build_cmake/darknet /darknet/build_cmake/libdark.so /darknet/
